@@ -22,12 +22,14 @@ déduplication persistante et file interne bornée) restent à implémenter.
 
 ## Prérequis
 
-- JDK 8 ou plus récent ;
+- JDK 11 ou plus récent pour compiler et exécuter les tests ;
 - un fournisseur JMS 2.0 accessible par JNDI pour l'exécution ;
 - un accepteur FIX distant.
 
 Le projet dépend de QuickFIX/J `3.0.2` et de l'API JMS `javax.jms` 2.0.1. Le
-broker ActiveMQ n'est utilisé que par les tests.
+broker ActiveMQ `5.19.7` n'est utilisé que par les tests et impose Java 11 à la
+construction. Le JAR produit cible toujours Java 8 et peut être exécuté avec un
+fournisseur JMS compatible Java 8.
 
 ## Compiler et tester
 
@@ -103,4 +105,3 @@ destination entrante et portent également la propriété `fixSessionId`.
 
 Les choix d'architecture, les garanties de livraison et la feuille de route
 sont détaillés dans [docs/architecture.md](docs/architecture.md).
-
