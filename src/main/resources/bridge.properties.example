@@ -1,0 +1,6 @@
+jms.connectionFactory=java:/jms/ConnectionFactory
+jms.outboundDestination=java:/jms/queue/fix.outbound
+jms.inboundDestination=java:/jms/queue/fix.inbound
+
+bridge.fixSettings=quickfixj.cfg
+bridge.requireFixLogon=true

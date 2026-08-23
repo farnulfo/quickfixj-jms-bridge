@@ -1,0 +1,17 @@
+[default]
+ConnectionType=initiator
+FileStorePath=target/data/jms-bridge/store
+FileLogPath=target/data/jms-bridge/log
+StartTime=00:00:00
+EndTime=00:00:00
+HeartBtInt=30
+ReconnectInterval=5
+UseDataDictionary=Y
+
+[session]
+BeginString=FIX.4.4
+SenderCompID=MY_BRIDGE
+TargetCompID=FIX_SERVER
+SocketConnectHost=localhost
+SocketConnectPort=9876
+DataDictionary=FIX44.xml
