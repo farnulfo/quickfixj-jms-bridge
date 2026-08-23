@@ -15,7 +15,11 @@ La passerelle doit :
 - publier ces réponses sur une destination JMS ;
 - gérer les erreurs, les reconnexions, les redélivrances et les doublons.
 
-JMS ne doit pas être ajouté directement dans `quickfixj-core`. La passerelle doit être un module indépendant construit autour des API publiques de QuickFIX/J.
+La passerelle est maintenue dans le dépôt public autonome
+[`farnulfo/quickfixj-jms-bridge`](https://github.com/farnulfo/quickfixj-jms-bridge).
+Elle utilise uniquement les API publiques et les artefacts publiés de
+QuickFIX/J. JMS reste ainsi hors de `quickfixj-core` et le cycle de publication
+de la passerelle est indépendant de celui du moteur FIX.
 
 ## Architecture générale
 
@@ -53,36 +57,45 @@ File fix.inbound
 Application métier
 ```
 
-## Nouveau module
+## Projet autonome
 
-Un nouveau module Maven pourrait être ajouté au projet :
+Le dépôt possède son propre POM, son Maven Wrapper, ses tests et sa
+documentation :
 
 ```text
 quickfixj-jms-bridge/
+├── .mvn/wrapper/
+├── docs/
+│   └── architecture.md
+├── mvnw
+├── mvnw.cmd
 ├── pom.xml
 ├── src/main/java/org/quickfixj/jms/
 │   ├── JmsFixBridgeServer.java
 │   ├── BridgeConfiguration.java
-│   ├── FixInitiatorService.java
 │   ├── FixApplication.java
 │   ├── OutboundMessageConsumer.java
 │   ├── InboundMessagePublisher.java
-│   ├── FixMessageCodec.java
-│   ├── MessageRoutingStrategy.java
-│   └── DeliveryStatusPublisher.java
-└── src/main/resources/
-    ├── bridge.properties
-    └── quickfixj.cfg
+│   └── RawFixMessageCodec.java
+├── src/main/resources/
+│   ├── bridge.properties.example
+│   └── quickfixj.cfg.example
+└── src/test/java/org/quickfixj/jms/
 ```
 
-Ce module dépendrait de :
+Le projet dépend directement de :
 
-- `quickfixj-core` ;
-- des modules de messages correspondant aux versions FIX utilisées ;
+- `quickfixj-core` 3.0.2 ;
+- `quickfixj-messages-all` 3.0.2 ;
 - l'API JMS `javax.jms`, compatible avec Java 8 ;
-- un client de broker, par exemple ActiveMQ Artemis.
+- SLF4J pour l'API de journalisation.
 
-L'intégration JMS doit rester hors de `quickfixj-core` afin que le moteur FIX demeure indépendant du transport applicatif.
+ActiveMQ Classic est une dépendance de test uniquement. Le fournisseur JMS de
+production reste au choix de l'utilisateur et doit être ajouté au classpath
+d'exécution avec sa configuration JNDI.
+
+Le projet porte sa propre version (`0.1.0-SNAPSHOT`) et ne dépend ni du POM
+parent ni du réacteur de construction de QuickFIX/J.
 
 ## Flux d'envoi
 
@@ -417,18 +430,26 @@ Les identifiants `JMSMessageID`, `JMSCorrelationID`, `ClOrdID`, `MsgSeqNum` et `
 - arrêt propre avec des messages en cours de traitement ;
 - fonctionnement avec plusieurs sessions et versions FIX.
 
-## Ordre d'implémentation proposé
+## État et feuille de route
 
-1. Ajouter le module autonome `quickfixj-jms-bridge`.
-2. Démarrer un `SocketInitiator` depuis `JmsFixBridgeServer`.
-3. Consommer la destination `fix.outbound`.
-4. Accepter d'abord un format FIX brut.
-5. Router les messages avec la propriété `fixSessionId`.
-6. Publier les messages reçus par `fromApp()` dans `fix.inbound`.
-7. Ajouter les événements de session et la DLQ.
-8. Ajouter les transactions JMS et la déduplication persistante.
-9. Tester les coupures JMS, les coupures FIX, le redémarrage et la redélivrance.
-10. Ajouter éventuellement un codec JSON métier dans un module séparé.
+La première étape fonctionnelle est implémentée :
+
+- projet Maven autonome utilisant QuickFIX/J 3.0.2 depuis Maven Central ;
+- démarrage d'un `SocketInitiator` depuis `JmsFixBridgeServer` ;
+- consommation de la destination sortante ;
+- prise en charge du format FIX brut ;
+- routage avec la propriété `fixSessionId` ;
+- publication des messages reçus par `fromApp()` ;
+- test d'intégration JMS et FIX du transport dans les deux directions.
+
+Les étapes suivantes sont :
+
+1. découpler `fromApp()` du producteur JMS avec une file interne bornée ;
+2. ajouter les événements de session et une DLQ ;
+3. ajouter les transactions JMS et la déduplication persistante ;
+4. tester les coupures JMS, les coupures FIX, le redémarrage et la redélivrance ;
+5. tester la saturation et l'arrêt avec des messages en cours ;
+6. ajouter éventuellement un codec JSON métier derrière une abstraction dédiée.
 
 ## Recommandation finale
 
